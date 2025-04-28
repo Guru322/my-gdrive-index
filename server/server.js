@@ -251,8 +251,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (http://localhost:${PORT})`);
+app.listen("3005", '0.0.0.0', () => {
+  console.log(`Server running on port 3005 (http://localhost:${PORT})`);
   
   if (process.env.START_DISCORD_BOT === 'true' || process.env.DISCORD_BOT_TOKEN) {
     discordBot.startBot();
