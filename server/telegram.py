@@ -11,7 +11,7 @@ load_dotenv(dotenv_path)
 api_id = int(os.getenv('TELETHON_API_ID', 0))
 api_hash = os.getenv('TELETHON_API_HASH')
 bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-server_url = os.getenv('SERVER_URL', 'http://localhost:5000')
+server_url = os.getenv('SERVER_URL', 'http://localhost:3005')
 
 if not api_id or not api_hash or not bot_token:
     print('Missing TELETHON_API_ID, TELETHON_API_HASH, or TELEGRAM_BOT_TOKEN in environment')
