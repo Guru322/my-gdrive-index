@@ -30,9 +30,21 @@ export default function FileItem({ file, onFolderClick }) {
     }
   };
 
-  const handleDownload = (e) => {
+  const handleDownload = async (e) => {
     e.stopPropagation();
-    window.open(`/api/download?path=${encodeURIComponent(file.Path)}`, '_blank');
+    try {
+      const response = await fetch(`/api/getDownloadUrl?path=${encodeURIComponent(file.Path)}`);
+      const data = await response.json();
+      
+      if (!response.ok || data.error === 'link_generation_failed') {
+        throw new Error('Cannot generate link');
+      }
+      
+      window.open(data.url, '_blank');
+    } catch (error) {
+      console.error('Error getting download URL:', error);
+      alert('Cannot generate link');
+    }
   };
 
   return (
