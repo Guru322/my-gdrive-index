@@ -8,6 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const discordBot = require('./discord');
+const { spawn } = require('child_process');
+const multer = require('multer');
 
 const execAsync = promisify(exec);
 const app = express();
@@ -15,6 +17,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+const uploadM = multer({ dest: os.tmpdir() });
 
 const downloadUrlCache = new Map();
 const CACHE_EXPIRY_MS = 10 * 60 * 1000; 
@@ -225,6 +229,20 @@ app.post('/api/upload', express.json(), async (req, res) => {
   }
 });
 
+app.post('/api/upload-file', uploadM.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const filePath = req.file.path;
+    const targetFolder = req.body.targetFolder || '/';
+    const uploadResult = await discordBot.uploadFileToGDrive(filePath, targetFolder);
+    fs.unlinkSync(filePath);
+    res.status(200).json(uploadResult);
+  } catch (err) {
+    console.error('Error uploading multipart file:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '..', 'build')));
 
@@ -240,6 +258,12 @@ app.listen(PORT, '0.0.0.0', () => {
     discordBot.startBot();
   } else {
     console.log('Discord bot not started. Set START_DISCORD_BOT=true or DISCORD_BOT_TOKEN to enable.');
+  }
+  if (process.env.START_TELEGRAM_BOT === 'true') {
+    const py = spawn('python3', ['server/telegram.py'], { stdio: 'inherit' });
+    py.on('close', code => console.log(`Telethon bot exited with code ${code}`));
+  } else {
+    console.log('Telethon bot not started. Set START_TELEGRAM_BOT=true to enable.');
   }
 });
 
