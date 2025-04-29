@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 import uuid
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 import asyncio
+from telethon.tl.types import MessageMediaDocument
 
-# Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
 
@@ -32,7 +32,7 @@ async def start(event):
 async def hi(event):
     await event.reply('hello')
 
-@client.on(events.NewMessage(func=lambda e: e.file is not None))
+@client.on(events.NewMessage(incoming=True, func=lambda e: isinstance(e.media, MessageMediaDocument)))
 async def handle_file(event):
     msg = event.message
     status_msg = await event.reply('Downloading your file...')
