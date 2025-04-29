@@ -148,19 +148,6 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (http://localhost:${PORT})`);
-
-  if (process.env.START_DISCORD_BOT === 'true' || process.env.DISCORD_BOT_TOKEN) {
-    discordBot.startBot();
-  } else {
-    console.log('Discord bot not started. Set START_DISCORD_BOT=true or DISCORD_BOT_TOKEN.');
-  }
-
-  if (process.env.START_TELEGRAM_BOT === 'true') {
-    const py = spawn('python3', ['server/telegram.py'], { stdio: 'inherit' });
-    py.on('close', code => console.log(`Telethon bot exited with code ${code}`));
-  } else {
-    console.log('Telethon bot not started. Set START_TELEGRAM_BOT=true to enable.');
-  }
 });
 
 module.exports = app;
