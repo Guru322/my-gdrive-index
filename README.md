@@ -22,10 +22,14 @@ A React application to browse and download files from Google Drive using rclone.
 │   └── ...
 ├── rclone.conf          # rclone configuration file
 ├── package.json         # Project dependencies and scripts
+├── Dockerfile           # Docker container configuration
+├── docker-compose.yml   # Docker Compose configuration
 └── README.md            # This file
 ```
 
 ## Setup
+
+### Standard Setup
 
 1. Install dependencies:
    ```
@@ -36,7 +40,29 @@ A React application to browse and download files from Google Drive using rclone.
 
 3. Ensure `rclone.conf` is present in the root directory with your Google Drive configured as "gdrive".
 
+### Docker Setup
+
+1. Build and run the Docker container:
+   ```
+   docker build -t gdrive-index .
+   docker run -p 3005:3005 -v $(pwd)/rclone.conf:/app/rclone.conf --name gdrive-index-container gdrive-index
+   ```
+
+2. Or use Docker Compose (recommended):
+   ```
+   docker-compose up -d
+   ```
+
+3. Access the application at http://localhost:3005
+
+4. To stop the container:
+   ```
+   docker stop gdrive-index-container
+   ```
+
 ## Running the Application
+
+### Standard Method
 
 For development, run both the React app and Express server:
 
@@ -61,8 +87,16 @@ For production:
 Create a `.env` file in the root directory with:
 
 ```
-PORT=5000
+PORT=3005
+NODE_ENV=production  # For production mode
+# Uncomment if you want to run the bots
+# START_DISCORD_BOT=true
+# DISCORD_BOT_TOKEN=your_discord_bot_token
+# START_TELEGRAM_BOT=true
+# TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 ```
+
+When using Docker, you can also set these in the `docker-compose.yml` file.
 
 ## License
 
