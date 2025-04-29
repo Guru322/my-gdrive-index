@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  gdrive-index:
+    build: .
+    container_name: gdrive-index
+    ports:
+      - '3005:3005'
+    volumes:
+      - ./:/app
+      - ./rclone.conf:/app/rclone.conf:ro
+    environment:
+      - PORT=3005
+      - NODE_ENV=production
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+     # - add more here
+    restart: unless-stopped

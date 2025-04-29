@@ -35,10 +35,28 @@ A React application to browse and download files from Google Drive using rclone.
    ```
    npm install
    ```
-
-2. Make sure rclone is installed on your system and properly configured with your Google Drive account.
-
-3. Ensure `rclone.conf` is present in the root directory with your Google Drive configured as "gdrive".
+2. Install rclone:
+   - On Linux:
+     ```bash
+     sudo apt install rclone
+     ```
+   - On macOS:
+     ```bash
+     brew install rclone
+     ```
+   - Other platforms: see https://rclone.org/downloads/
+3. Configure rclone:
+   ```bash
+   rclone config
+   ```
+   - Choose `n` for new remote
+   - Name: `gdrive`
+   - Select `drive` as the storage type
+   - Follow the OAuth flow to grant access
+4. Ensure `rclone.conf` is available in the project root. rclone will generate it at `~/.config/rclone/rclone.conf`. You can copy or symlink it:
+   ```bash
+   ln -s ~/.config/rclone/rclone.conf ./rclone.conf
+   ```
 
 ### Docker Setup
 
@@ -79,7 +97,7 @@ For production:
 
 2. Start the server:
    ```
-   npm run server
+   npm run prod
    ```
 
 ## Environment Variables
@@ -88,12 +106,13 @@ Create a `.env` file in the root directory with:
 
 ```
 PORT=3005
-NODE_ENV=production  # For production mode
-# Uncomment if you want to run the bots
-# START_DISCORD_BOT=true
-# DISCORD_BOT_TOKEN=your_discord_bot_token
-# START_TELEGRAM_BOT=true
-# TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+DISCORD_BOT_TOKEN
+DISCORD_BOT_TOKEN
+DISCORD_BOT_TOKEN
+TELEGRAM_BOT_TOKEN
+TELETHON_API_ID
+TELETHON_API_HASH
+
 ```
 
 When using Docker, you can also set these in the `docker-compose.yml` file.
