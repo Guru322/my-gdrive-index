@@ -140,15 +140,12 @@ app.post('/api/upload', express.json(), async (req, res) => {
   }
 });
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'build')));
+app.use(express.static(path.join(__dirname, '..', 'build')));
 
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
-  });
-}
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
+});
 
-// Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (http://localhost:${PORT})`);
 

@@ -10,9 +10,9 @@
         "server": "node server/server.js",
         "bot:discord": "node -e \"require('./server/discord').startBot()\"",
         "bot:telegram": "python server/telegram.py",
-        "dev": "concurrently \"npm run start\" \"npm run server\"",
+        "dev": "npm run build && npm run server",
         "dev:bot": "concurrently \"npm run bot:discord\" \"npm run bot:telegram\"",
-        "dev:all": "concurrently \"npm run start\" \"npm run server\" \"npm run bot:discord\" \"npm run bot:telegram\"",
+        "dev:all": "npm run build && concurrently \"npm run server\" \"npm run bot:discord\" \"npm run bot:telegram\"",
         "prod": "npm run build && concurrently \"npm run server\" \"npm run bot:discord\" \"npm run bot:telegram\""
     },
     "dependencies": {
@@ -46,6 +46,5 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
-    },
-    "proxy": "http://localhost:3005"
+    }
 }
