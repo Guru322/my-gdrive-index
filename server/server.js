@@ -13,18 +13,23 @@ const discordBot = require('./discord');
 
 const execAsync = promisify(exec);
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3003;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Setup Multer for file uploads
-const uploadM = multer({ dest: os.tmpdir() });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, os.tmpdir());
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+const uploadM = multer({ storage: storage });
 
-// Caching Download URLs
 const downloadUrlCache = new Map();
-const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_EXPIRY_MS = 10 * 60 * 1000;
 
 function cleanupExpiredCache() {
   const now = Date.now();
@@ -36,29 +41,22 @@ function cleanupExpiredCache() {
 }
 setInterval(cleanupExpiredCache, 5 * 60 * 1000);
 
-// Rclone config setup
 async function setupRcloneConfig() {
   return path.join(__dirname, '..', 'rclone.conf');
 }
-
-// API Routes
 
 app.get('/api/list', async (req, res) => {
   try {
     const folderPath = req.query.path || '/';
     const configPath = await setupRcloneConfig();
-
     const rcloneCommand = `rclone lsjson gdrive:"${folderPath}" --config="${configPath}"`;
     console.log('List command:', rcloneCommand);
-
     const { stdout } = await execAsync(rcloneCommand);
     const files = JSON.parse(stdout);
-
     const formattedFiles = files.map(file => ({
       ...file,
       Path: folderPath === '/' ? `/${file.Name}` : `${folderPath}/${file.Name}`
     }));
-
     res.status(200).json(formattedFiles);
   } catch (error) {
     console.error('Error listing files:', error);
@@ -83,7 +81,6 @@ app.get('/api/getDownloadUrl', async (req, res) => {
     const sanitizedPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
     const rcloneCommand = `rclone lsf "gdrive:${sanitizedPath}" --format="ips" --config="${configPath}"`;
     console.log('Executing rclone command:', rcloneCommand);
-
     const { stdout } = await execAsync(rcloneCommand);
     const fileInfo = stdout.trim();
     if (!fileInfo) return res.status(404).json({ error: 'link_generation_failed' });
@@ -94,7 +91,6 @@ app.get('/api/getDownloadUrl', async (req, res) => {
 
     const downloadUrl = `https://drive.google.com/uc?id=${fileId}&export=download`;
     downloadUrlCache.set(filePath, { url: downloadUrl, timestamp: Date.now() });
-
     res.status(200).json({ url: downloadUrl });
   } catch (error) {
     console.error('Error generating download URL:', error);
@@ -108,20 +104,43 @@ app.post('/api/upload-file', uploadM.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
+  let tempFilePathWithOriginalName;
+  const tempFilePathRandom = req.file.path;
+
   try {
-    const filePath = req.file.path;
+    const originalFileName = req.file.originalname;
     const targetFolder = req.body.targetFolder || '/';
+    tempFilePathWithOriginalName = path.join(path.dirname(tempFilePathRandom), originalFileName);
 
-    console.log(`Uploading file ${filePath} to GDrive at folder ${targetFolder}...`);
-
-    const uploadResult = await discordBot.uploadFileToGDrive(filePath, targetFolder);
-
-    fs.unlinkSync(filePath); // Cleanup uploaded file from temp
-
+    if (fs.existsSync(tempFilePathWithOriginalName)) {
+        if (tempFilePathRandom !== tempFilePathWithOriginalName) {
+             console.warn(`Destination file ${tempFilePathWithOriginalName} already exists. Overwriting.`);
+        }
+    }
+    fs.renameSync(tempFilePathRandom, tempFilePathWithOriginalName);
+    console.log(`Uploading file ${originalFileName} (from ${tempFilePathWithOriginalName}) to GDrive at folder ${targetFolder}...`);
+    const uploadResult = await discordBot.uploadFileToGDrive(tempFilePathWithOriginalName, targetFolder);
     res.status(200).json(uploadResult);
   } catch (err) {
     console.error('Error uploading file:', err);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (tempFilePathWithOriginalName && fs.existsSync(tempFilePathWithOriginalName)) {
+      try {
+        fs.unlinkSync(tempFilePathWithOriginalName);
+        console.log(`Successfully deleted temp file: ${tempFilePathWithOriginalName}`);
+      } catch (unlinkErr) {
+        console.error(`Error deleting temp file ${tempFilePathWithOriginalName}:`, unlinkErr);
+      }
+    }
+    if (fs.existsSync(tempFilePathRandom) && tempFilePathRandom !== tempFilePathWithOriginalName) {
+        try {
+            fs.unlinkSync(tempFilePathRandom);
+            console.log(`Successfully deleted original multer temp file: ${tempFilePathRandom} (rename might have failed)`);
+        } catch (unlinkErr) {
+            console.error(`Error deleting original multer temp file ${tempFilePathRandom}:`, unlinkErr);
+        }
+    }
   }
 });
 
@@ -130,9 +149,7 @@ app.post('/api/upload', express.json(), async (req, res) => {
     const { filePath, targetFolder } = req.body;
     if (!filePath) return res.status(400).json({ error: 'No file path specified' });
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
-
     const uploadResult = await discordBot.uploadFileToGDrive(filePath, targetFolder || '/');
-
     res.status(200).json(uploadResult);
   } catch (error) {
     console.error('Error uploading file:', error);
@@ -151,3 +168,4 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
